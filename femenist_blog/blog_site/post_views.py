@@ -8,6 +8,7 @@ from datetime import datetime
 @api_view(['POST'])
 def Create_Blog_Post(request):
     data = request.data
+    images = []
 
     data['date'] = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
 
@@ -20,8 +21,10 @@ def Create_Blog_Post(request):
 
     blog_post.save()
 
-    if('image' in data.keys()):
-        img = Blog_Post_Image(blog_post = blog_post, image = data['image'])
-        img.save()
+    #Sift through images in data and create a blog post image for each 
+    for key in data.keys():
+        if(key[0:5] == 'image'):
+            img = Blog_Post_Image(blog_post = blog_post, image = data[key])
+            img.save()
 
     return JsonResponse(Blog_Post_Ser(blog_post, many = False).data, safe = False)
