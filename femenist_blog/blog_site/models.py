@@ -15,6 +15,8 @@ class Blog_Post(models.Model):
     author                              = models.CharField(max_length = 75, default = 'Enter name of the post author')
     post_content                        = models.TextField(default = 'Write some content!')
     date                                = models.DateTimeField(default = timezone.now)
+    isMainPost                          = models.BooleanField(default = True)
+    isVisible                           = models.BooleanField(default = True)
 
 class Blog_Post_Image(models.Model):
     blog_post                           = models.ForeignKey(Blog_Post, on_delete = models.CASCADE, related_name = 'blog_post')
@@ -37,7 +39,7 @@ class User(AbstractBaseUser):
 
     EMAIL_FIELD                     = 'email'
     USERNAME_FIELD                  = 'username'
-    REQUIRED_FIELDS                 = ['email', 'first_name', 'last_name', 'date_of_birth', 'verification']
+    REQUIRED_FIELDS                 = ['email', 'first_name', 'last_name', 'date_of_birth']
 
     objects                         = UserManager()
     def __str__(self):

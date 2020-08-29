@@ -33,6 +33,7 @@ ALLOWED_HOSTS = ['localhost', '18.221.47.165', 'ec2-18-221-47-165.us-east-2.comp
 INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
     'blog_site',
     'django.contrib.admin',
     'django.contrib.auth',
