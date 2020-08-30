@@ -9,8 +9,13 @@ from django.contrib.auth import authenticate
 @api_view(['GET'])
 def Get_Blog_Posts(request, lowerlimit, upperlimit):
     data = []
-    posts = Blog_Post.objects.filter(isMainPost = True)[lowerlimit:upperlimit]
+    posts = Blog_Post.objects.filter(isMainPost = True).order_by('-date')
 
+    if(lowerlimit >= 0 and lowerlimit < posts.count() and upperlimit >= lowerlimit and upperlimit <= posts.count()):
+        posts = posts[lowerlimit:upperlimit]
+    else:
+        return JsonResponse('Out of Bounds', safe = False, status = 500)
+        
     for post in posts:
         post_images = Blog_Post_Image.objects.filter(blog_post = post).values('image')
         data.append(
