@@ -25,6 +25,7 @@ def Get_Blog_Posts(request, lowerlimit, upperlimit):
                 'author': post.author,
                 'post_content': post.post_content,
                 'date': post.date,
+                'isVisible': post.isVisible,
                 'images': [i['image'] for i in list(post_images)]
             }
         )
