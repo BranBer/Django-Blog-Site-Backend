@@ -118,10 +118,10 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '1000/day',
-        'user': '5000/day'
-    }
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '1000/day',
+    #     'user': '5000/day'
+    # }
 }
 
 # Internationalization

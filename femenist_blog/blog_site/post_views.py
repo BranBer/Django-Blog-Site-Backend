@@ -27,13 +27,13 @@ def Create_Blog_Post(request):
         data = request.data
         images = []
 
-        data['date'] = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
+        date = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
 
         blog_post = Blog_Post(
             post_title = data['post_title'], 
             author = data['author'],
             post_content = data['post_content'],
-            date = data['date']
+            date = date
             )
 
         blog_post.save()
@@ -41,39 +41,47 @@ def Create_Blog_Post(request):
         #Sift through images in data and create a blog post image for each 
         for key in data.keys():
             if(key[0:5] == 'image'):
-                img = Blog_Post_Image(blog_post = blog_post, image = data[key])
-                img.save()
+                if(data[key] is not None):
+                    img = Blog_Post_Image(blog_post = blog_post, image = data[key])
+                    img.save()
 
         return JsonResponse(Blog_Post_Ser(blog_post, many = False).data, safe = False)
     else:
-        data = request.data
-        data._mutable = True
+        return JsonResponse("Login first", safe = False)
 
-        if('post_content' not in data.keys()):
-            return JsonResponse("Must include post_content in body", safe = False)
+@api_view(['POST'])
+def Create_Blog_Post_By_You(request):
+    data = request.data
+    data._mutable = True
+
+    if('post_content' not in data.keys()):
+        return JsonResponse("Must include post_content in body", safe = False, status = 500)
+    elif(data['post_content'] == ''):
+        return JsonResponse("Must include post_content in body", safe = False, status = 500)
+
+    if('post_title' not in data.keys()):
+        return JsonResponse("Must include post_title in body", safe = False, status = 500)
+    elif(data['post_title'] == ''):
+        return JsonResponse("Must include post_title in body", safe = False, status = 500)
         
-        if('post_title' not in data.keys()):
-            return JsonResponse("Must include post_title in body", safe = False)
+    if('author' not in data.keys()):
+        data['author'] = 'anonymous'
 
-        if('author' not in data.keys()):
-            data['author'] = 'anonymous'
+    date = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
 
-        date = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
+    blog_post = Blog_Post(
+        post_title = data['post_title'], 
+        author = data['author'],
+        post_content = data['post_content'],
+        date = date,
+        isMainPost = False,
+        isVisible = False,
+        )
 
-        blog_post = Blog_Post(
-            post_title = data['post_title'], 
-            author = data['author'],
-            post_content = data['post_content'],
-            date = date,
-            isMainPost = False,
-            isVisible = False,
-            )
+    blog_post.save()
 
-        blog_post.save()
+    return JsonResponse(Blog_Post_Ser(blog_post, many = False).data, safe = False)
 
-        return JsonResponse(Blog_Post_Ser(blog_post, many = False).data, safe = False)
-
-    return JsonResponse("Login first", safe = False)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -82,7 +90,7 @@ def UpdateBlogPostVisibility(request):
 
     if('id' in data.keys()):
         try:
-            blog_post = Blog_Post.objects.get(id = int(request.data['id']), isMainPost = False)
+            blog_post = Blog_Post.objects.get(id = int(request.data['id']))
             blog_post.isVisible = not blog_post.isVisible
             blog_post.save(update_fields=['isVisible'])
 

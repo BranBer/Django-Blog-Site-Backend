@@ -7,15 +7,21 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 
 @api_view(['GET'])
-def Get_Blog_Posts(request, lowerlimit, upperlimit):
+def Get_Blog_Posts(request, lowerlimit, postsPerPage):
     data = []
     posts = Blog_Post.objects.filter(isMainPost = True).order_by('-date')
 
-    if(lowerlimit >= 0 and lowerlimit < posts.count() and upperlimit >= lowerlimit and upperlimit <= posts.count()):
-        posts = posts[lowerlimit:upperlimit]
+    if(lowerlimit < 0): #Display first page of posts
+        posts = posts[0:postsPerPage]
+    elif(len(posts) - lowerlimit < postsPerPage): #Display last page of posts
+        if(len(posts) - postsPerPage >= 0):
+            posts = posts[len(posts) - postsPerPage: len(posts)]
+        else:
+            posts = posts[0: len(posts)]
     else:
-        return JsonResponse('Out of Bounds', safe = False, status = 500)
+        posts = posts[lowerlimit:lowerlimit+postsPerPage]
         
+
     for post in posts:
         post_images = Blog_Post_Image.objects.filter(blog_post = post).values('image')
         data.append(
@@ -33,45 +39,37 @@ def Get_Blog_Posts(request, lowerlimit, upperlimit):
     return JsonResponse(data, safe = False)
 
 
-@api_view(['POST'])
-def Get_Blog_Posts_By_Viewer(request, lowerlimit, upperlimit):
+@api_view(['GET'])
+def Get_Blog_Posts_By_Viewer(request, lowerlimit, postsPerPage):
     data = []
-    
 
-    if('isVisible' in request.data.keys()):
-        visibility = request.data['isVisible'].rstrip()
+    posts = Blog_Post.objects.filter(isMainPost = False, isVisible = True).order_by('-date')                
 
-        posts = Blog_Post.objects.filter(isMainPost = False, isVisible = visibility).order_by('-date')                
-
-        if(lowerlimit >= 0 and lowerlimit < posts.count() and upperlimit >= lowerlimit and upperlimit <= posts.count()):
-            body = request.data
-            if('PullFromEndpoint' in body.keys()):
-                if(body['PullFromEndpoint'] == "Last"):
-                    posts = posts[posts.count() - 1 - lowerlimit:posts.count() - 1]
-                    data.append({'position': posts.count() - lowerlimit})
-                if(body['PullFromEndpoint'] == "First"):
-                    posts = posts[0: upperlimit]
-            else:
-                posts = posts[lowerlimit:upperlimit]
+    if(lowerlimit < 0): #Display first page of posts
+        posts = posts[0:postsPerPage]
+    elif(len(posts) - lowerlimit < postsPerPage):#Display last page of posts
+        if(len(posts) - postsPerPage >= 0):
+            posts = posts[len(posts) - postsPerPage: len(posts)]
         else:
-            return JsonResponse('Out of Bounds', safe = False, status = 500)
+            posts = posts[0: len(posts)]
+    else:
+        posts = posts[lowerlimit:lowerlimit+postsPerPage]
 
-        for post in posts:
-            data.append(
-                {
-                    'id': post.id,
-                    'post_title': post.post_title,
-                    'author': post.author,
-                    'post_content': post.post_content,
-                    'date': post.date,
-                    'isVisible': post.isVisible
-                }
-            )
 
-        return JsonResponse(data, safe = False)
+    for post in posts:
+        data.append(
+            {
+                'id': post.id,
+                'post_title': post.post_title,
+                'author': post.author,
+                'post_content': post.post_content,
+                'date': post.date,
+                'isVisible': post.isVisible
+            }
+        )
+
+    return JsonResponse(data, safe = False)
    
-    return JsonResponse('Must Include isVisible Parameter is Body', safe = False)
-
 
 @api_view(['GET'])
 def Get_Blog_Post_ID(request, id):
