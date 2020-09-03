@@ -149,27 +149,53 @@ def DeletePost(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def Create_Comment(request):
-        authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+    authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+    
+    try:
+        user = Token.objects.get(key = authtoken).user
+
+        if('id' in request.data.keys() and 'comment' in request.data.keys()):
+            comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
+            ser = Blog_Post_Comments_Serializer(comment)
+
+            return JsonResponse(ser.data, safe = False, status = 200)
+        elif('comment_id' in request.data.keys() and 'comment' in request.data.keys()):
+            parent_comment = Blog_Post_Comments.objects.get(id = int(request.data['comment_id']))
+            reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment)
+
+            ser = Blog_Post_Comments_Serializer(reply, many = False)
+
+            return JsonResponse(ser.data, safe = False, status = 200)
+
+
+    except Token.DoesNotExist:
+        return JsonResponse("Login first to comment", safe = False, status = 500)
+    except Blog_Post.DoesNotExist:
+        return JsonResponse("Invalid Blog Post ID", safe = False, status = 500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def Delete_Comment(request):
+    authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+
+    try:
+        user = Token.objects.get(key = authtoken).user
         
-        try:
-            user = Token.objects.get(key = authtoken).user
+        if(user.is_superuser): #If user is a superuser, they can delete any comment
+            if('id' in request.data.keys()):
+                deleted_comment = Blog_Post_Comments.objects.get(id = int(request.data['id'])).delete()
 
-            if('id' in request.data.keys() and 'comment' in request.data.keys()):
-                comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
-                ser = Blog_Post_Comments_Serializer(comment)
+                return JsonResponse("Successfully Deleted Comment", safe = False)
+            else: #If user is owner of comment, they can delete it
+                comment =  Blog_Post_Comments.objects.get(id = int(request.data['id']))
+                if(user.id == comment.user.id):
+                    comment.delete() 
+                    return JsonResponse("Successfully Deleted Comment", safe = False)           
 
-                return JsonResponse(ser.data, safe = False, status = 200)
-            elif('comment_id' in request.data.keys() and 'comment' in request.data.keys()):
-                reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'])
-                parent_comment = Blog_Post_Comments.objects.filter(id = int(request.data['comment_id'])).update(reply = reply)
-                parent_comment = Blog_Post_Comments.objects.get(id = int(request.data['comment_id']))
+        return JsonResponse("Not Authorized", safe = False, status = 500)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 500)
+    except Blog_Post_Comments.DoesNotExist:
+        return JsonResponse("Comment does not exist", safe = False, status = 404)
 
-                ser = Blog_Post_Comments_Serializer(parent_comment, many = False)
-
-                return JsonResponse(ser.data, safe = False, status = 200)
-
-
-        except Token.DoesNotExist:
-            return JsonResponse("Login first to comment", safe = False, status = 500)
-        except Blog_Post.DoesNotExist:
-            return JsonResponse("Invalid Blog Post ID", safe = False, status = 500)

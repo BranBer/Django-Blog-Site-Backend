@@ -6,6 +6,9 @@ from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
+
 @api_view(['GET'])
 def Get_Blog_Posts(request, lowerlimit, postsPerPage):
     data = []
@@ -101,3 +104,15 @@ def Get_Blog_Post_ID(request, id):
 
     return JsonResponse({}, safe = False)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def Get_Blog_Post_Comments(request, id):
+    try:
+        post = Blog_Post.objects.get(id = int(id))
+        post_comments = Blog_Post_Comments.objects.filter(blog_post = post)
+
+        ser = Blog_Post_Comments_Serializer(post_comments, many = True)
+
+        return JsonResponse(ser.data, safe = False)
+    except Blog_Post.DoesNotExist:
+        return JsonResponse("Invalid Blog Post ID", safe = False, status = 404)

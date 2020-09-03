@@ -26,6 +26,8 @@ urlpatterns = [
     path('posts/ByYou/<int:lowerlimit>/<int:postsPerPage>/', Get_Blog_Posts_By_Viewer),
     path('posts/UpdateVisibility/', UpdateBlogPostVisibility),
     path('posts/delete/', DeletePost),
+    path('posts/comments/<int:id>/', Get_Blog_Post_Comments),
+    path('posts/comments/delete/', Delete_Comment),
     path('create/', Create_Blog_Post),
     path('create/ByYou/', Create_Blog_Post_By_You),
     path('create/comment/', Create_Comment),

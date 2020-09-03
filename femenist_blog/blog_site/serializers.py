@@ -13,10 +13,10 @@ class RecursiveField(serializers.Serializer):
         return ser.data
 
 class Blog_Post_Comments_Serializer(serializers.ModelSerializer):
-    replies = RecursiveField(many = True)
+    reply = RecursiveField(many = True)
     class Meta:
         model = Blog_Post_Comments
-        fields = ['id', 'blog_post', 'comment', 'replies']
+        fields = ['id', 'blog_post', 'comment', 'reply']
 
 class Blog_Post_Ser(serializers.ModelSerializer):    
     class Meta:

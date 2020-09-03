@@ -56,7 +56,7 @@ class Blog_Post_Comments(models.Model):
     user                                = models.ForeignKey(User, on_delete = models.CASCADE)
     blog_post                           = models.ForeignKey(Blog_Post, on_delete = models.CASCADE, default = None, null = True)
     comment                             = models.TextField(max_length = 250, default = '')
-    reply                               = models.ForeignKey('self', on_delete = models.DO_NOTHING, null = True, related_name = 'replies')
+    parent                              = models.ForeignKey('self', on_delete = models.CASCADE, null = True, related_name = "reply")
 
 #Creates a token for a user each time a user is created
 @receiver(post_save, sender = settings.AUTH_USER_MODEL)
