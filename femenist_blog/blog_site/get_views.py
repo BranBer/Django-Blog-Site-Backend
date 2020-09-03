@@ -105,7 +105,6 @@ def Get_Blog_Post_ID(request, id):
     return JsonResponse({}, safe = False)
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def Get_Blog_Post_Comments(request, id):
     try:
         post = Blog_Post.objects.get(id = int(id))
