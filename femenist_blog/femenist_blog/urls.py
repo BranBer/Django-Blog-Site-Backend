@@ -28,6 +28,7 @@ urlpatterns = [
     path('posts/delete/', DeletePost),
     path('create/', Create_Blog_Post),
     path('create/ByYou/', Create_Blog_Post_By_You),
+    path('create/comment/', Create_Comment),
     path('login/', AdminLogin),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

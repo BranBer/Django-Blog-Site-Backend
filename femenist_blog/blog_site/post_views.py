@@ -90,14 +90,21 @@ def UpdateBlogPostVisibility(request):
 
     if('id' in data.keys()):
         try:
-            blog_post = Blog_Post.objects.get(id = int(request.data['id']))
-            blog_post.isVisible = not blog_post.isVisible
-            blog_post.save(update_fields=['isVisible'])
+            authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+            isSuperUser = Token.objects.get(key = authtoken).user.isSuperUser
+
+            if(isSuperUser):
+                blog_post = Blog_Post.objects.get(id = int(request.data['id']))
+                blog_post.isVisible = not blog_post.isVisible
+                blog_post.save(update_fields=['isVisible'])
+            else:
+                return JsonResponse('Not Authorized', safe = False, status = 500)
 
             return JsonResponse('Successfully Updated Post Visibility', safe = False)
         except Blog_Post.DoesNotExist:
-            return JsonResponse('No Posts Found')
-
+            return JsonResponse('No Posts Found', safe = False)
+        except Token.DoesNotExist:
+            return JsonResponse('Not Authorized', safe = False, status = 500)
 
     return JsonResponse('Must include id in body')
 
@@ -125,12 +132,44 @@ def DeletePost(request):
     try:
         if('id' not in request.data.keys()):
             return JsonResponse("Invalid Credentials", safe = False)
-        
-        Blog_Post.objects.get(id = request.data['id']).delete()
 
-        return JsonResponse("Successfully Deleted Post", safe = False)
+        authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+        
+        isSuperUser = Token.objects.get(key = authtoken).user.isSuperUser
+        
+        if(isSuperUser):
+            Blog_Post.objects.get(id = request.data['id']).delete()
+            return JsonResponse("Successfully Deleted Post", safe = False)
+        else:
+            return JsonResponse("Not Authorized", safe = False, status = 500)
     except Blog_Post.DoesNotExist:
         return JsonResponse("Invalid ID", safe = False)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def Create_Comment(request):
+        authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
         
+        try:
+            user = Token.objects.get(key = authtoken).user
+
+            if('id' in request.data.keys() and 'comment' in request.data.keys()):
+                comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
+                ser = Blog_Post_Comments_Serializer(comment)
+
+                return JsonResponse(ser.data, safe = False, status = 200)
+            elif('comment_id' in request.data.keys() and 'comment' in request.data.keys()):
+                reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'])
+                parent_comment = Blog_Post_Comments.objects.filter(id = int(request.data['comment_id'])).update(reply = reply)
+                parent_comment = Blog_Post_Comments.objects.get(id = int(request.data['comment_id']))
+
+                ser = Blog_Post_Comments_Serializer(parent_comment, many = False)
+
+                return JsonResponse(ser.data, safe = False, status = 200)
+
+
+        except Token.DoesNotExist:
+            return JsonResponse("Login first to comment", safe = False, status = 500)
+        except Blog_Post.DoesNotExist:
+            return JsonResponse("Invalid Blog Post ID", safe = False, status = 500)
