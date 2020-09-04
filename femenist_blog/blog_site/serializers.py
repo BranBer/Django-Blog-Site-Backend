@@ -17,7 +17,7 @@ class Blog_Post_Comments_Serializer(serializers.ModelSerializer):
     username = serializers.CharField(source = 'user.username')
     class Meta:
         model = Blog_Post_Comments
-        fields = ['id', 'blog_post', 'comment', 'username', 'reply']
+        fields = ['id', 'blog_post', 'comment', 'username', 'reply', 'date_posted']
 
 class Blog_Post_Ser(serializers.ModelSerializer):    
     class Meta:

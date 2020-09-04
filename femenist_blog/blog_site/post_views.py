@@ -150,7 +150,8 @@ def DeletePost(request):
 @permission_classes([IsAuthenticated])
 def Create_Comment(request):
     authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
-    
+    now = datetime.now()
+
     try:
         user = Token.objects.get(key = authtoken).user
         user_has_posted = True if Blog_Post_Comments.objects.filter(user = user).count() > 0 else False
@@ -158,7 +159,7 @@ def Create_Comment(request):
         if('id' in request.data.keys() and 'comment' in request.data.keys()):
             #Check if user posted in this thread already
             if(user_has_posted == False):
-                comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
+                comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'], date_posted = now)
                 ser = Blog_Post_Comments_Serializer(comment)
 
                 return JsonResponse(ser.data, safe = False, status = 200)
@@ -169,7 +170,7 @@ def Create_Comment(request):
             user_has_replied = True if Blog_Post_Comments.objects.filter(parent = parent_comment, user = user).count() > 0 else False
 
             if(user_has_replied == False):
-                reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment)
+                reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment, date_posted = now)
 
                 ser = Blog_Post_Comments_Serializer(reply, many = False)
 
