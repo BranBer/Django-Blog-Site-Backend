@@ -153,25 +153,35 @@ def Create_Comment(request):
     
     try:
         user = Token.objects.get(key = authtoken).user
+        user_has_posted = True if Blog_Post_Comments.objects.filter(user = user).count() > 0 else False
 
         if('id' in request.data.keys() and 'comment' in request.data.keys()):
-            comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
-            ser = Blog_Post_Comments_Serializer(comment)
+            #Check if user posted in this thread already
+            if(user_has_posted == False):
+                comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'])
+                ser = Blog_Post_Comments_Serializer(comment)
 
-            return JsonResponse(ser.data, safe = False, status = 200)
+                return JsonResponse(ser.data, safe = False, status = 200)
         elif('comment_id' in request.data.keys() and 'comment' in request.data.keys()):
             parent_comment = Blog_Post_Comments.objects.get(id = int(request.data['comment_id']))
-            reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment)
+            
+            #Check to see if a user has already replied to this comment
+            user_has_replied = True if Blog_Post_Comments.objects.filter(parent = parent_comment, user = user).count() > 0 else False
 
-            ser = Blog_Post_Comments_Serializer(reply, many = False)
+            if(user_has_replied == False):
+                reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment)
 
-            return JsonResponse(ser.data, safe = False, status = 200)
+                ser = Blog_Post_Comments_Serializer(reply, many = False)
 
+                return JsonResponse(ser.data, safe = False, status = 200)
 
+        return JsonResponse("You can only comment once per post, and reply once per comment", safe = False, status = 500)
     except Token.DoesNotExist:
         return JsonResponse("Login first to comment", safe = False, status = 500)
     except Blog_Post.DoesNotExist:
         return JsonResponse("Invalid Blog Post ID", safe = False, status = 500)
+    except Blog_Post_Comments.DoesNotExist:
+        return JsonResponse("Invalid Comment ID", safe = False, status = 500)
 
 
 @api_view(['POST'])
