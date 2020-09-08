@@ -28,6 +28,7 @@ urlpatterns = [
     path('posts/delete/', DeletePost),
     path('posts/comments/<int:id>/', Get_Blog_Post_Comments),
     path('posts/comments/delete/', Delete_Comment),
+    path('posts/comments/vote/', Vote_On_Comment),
     path('create/', Create_Blog_Post),
     path('create/ByYou/', Create_Blog_Post_By_You),
     path('create/comment/', Create_Comment),

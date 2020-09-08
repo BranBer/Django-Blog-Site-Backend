@@ -210,3 +210,51 @@ def Delete_Comment(request):
     except Blog_Post_Comments.DoesNotExist:
         return JsonResponse("Comment does not exist", safe = False, status = 404)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def Vote_On_Comment(request):
+    authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+    try:
+        user = Token.objects.get(key = authtoken).user
+        
+        if('id' in request.data.keys()):
+            comment = Blog_Post_Comments.objects.get(id = request.data['id'])
+            #Has to check if user has voted on comment already. If the user has already voted then reject the request. 
+            #However, if the user's new vote is different than the current, update that user's vote.
+            
+            if('vote_type' in request.data.keys()): #vote_type = true is an upvote, vote_type = false is a downvote
+                user_vote = comment.blog_post_comment_vote_set.filter(user = user)
+                vote = True if request.data['vote_type'].lower() == 'true' else False
+
+                #If a user has previously voted on this comment
+                if(user_vote.count() > 0):
+                    this_vote = user_vote[0]
+                    
+                    if(vote != user_vote[0].vote_type):
+                        this_vote.vote_type = not this_vote.vote_type
+                        this_vote.save(update_fields = ['vote_type'])
+
+                        return JsonResponse(
+                            "Changed user " + user.username +"'s vote to " + 
+                            ('upvote' if bool(vote) else 'downvote'), safe = False, status = 200)
+                    else:
+                        return JsonResponse("Can only vote once per comment, or change your vote.", safe = False, status = 200)
+                else:
+                    #Create a new vote for the requesting user
+                    vote = Blog_Post_Comment_Vote.objects.create(
+                        vote_type = request.data['vote_type'],
+                        user = user,
+                        comment = comment
+                    )
+
+                    return JsonResponse(
+                        "Successfully " + ("upvoted" if vote.vote_type else "downvoted") + ".",
+                        safe = False,
+                        status = 200
+                    )
+        
+        return JsonResponse('Something went wrong', safe = False, status = 401)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 500)
+    except Blog_Post_Comments.DoesNotExist:
+        return JsonResponse("Invalid Comment", safe = False, status = 500)
