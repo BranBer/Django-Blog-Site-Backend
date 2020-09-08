@@ -235,10 +235,12 @@ def Vote_On_Comment(request):
                         this_vote.save(update_fields = ['vote_type'])
 
                         return JsonResponse(
-                            "Changed user " + user.username +"'s vote to " + 
-                            ('upvote' if bool(vote) else 'downvote'), safe = False, status = 200)
+                            Blog_Post_Comments_Serializer(comment, many = False).data,
+                            safe = False,
+                            status = 200
+                        )
                     else:
-                        return JsonResponse("Can only vote once per comment, or change your vote.", safe = False, status = 200)
+                        return JsonResponse("Can only vote once per comment, or change your vote.", safe = False, status = 500)
                 else:
                     #Create a new vote for the requesting user
                     vote = Blog_Post_Comment_Vote.objects.create(
@@ -248,11 +250,12 @@ def Vote_On_Comment(request):
                     )
 
                     return JsonResponse(
-                        "Successfully " + ("upvoted" if vote.vote_type else "downvoted") + ".",
+                        Blog_Post_Comments_Serializer(comment, many = False).data,
                         safe = False,
                         status = 200
                     )
-        
+            else:
+                return JsonResponse("Must Include vote_type", safe = False, status = 500)
         return JsonResponse('Something went wrong', safe = False, status = 401)
     except Token.DoesNotExist:
         return JsonResponse("Invalid Token", safe = False, status = 500)

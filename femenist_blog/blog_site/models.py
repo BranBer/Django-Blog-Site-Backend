@@ -61,7 +61,7 @@ class Blog_Post_Comments(models.Model):
 #The Vote is an upvote if vote_type is true. The vote is a downvote if vote_type is false.
 class Blog_Post_Comment_Vote(models.Model):
     vote_type                           = models.BooleanField(default = True)
-    user                                = models.OneToOneField(User, null = True, on_delete = models.DO_NOTHING)
+    user                                = models.ForeignKey(User, null = True, on_delete = models.DO_NOTHING)
     comment                             = models.ForeignKey(Blog_Post_Comments, null = True, on_delete = models.CASCADE)
     
 #Creates a token for a user each time a user is created
