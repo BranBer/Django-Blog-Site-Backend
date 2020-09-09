@@ -154,9 +154,10 @@ def Create_Comment(request):
 
     try:
         user = Token.objects.get(key = authtoken).user
-        user_has_posted = True if Blog_Post_Comments.objects.filter(user = user).count() > 0 else False
 
         if('id' in request.data.keys() and 'comment' in request.data.keys()):
+            user_has_posted = True if Blog_Post_Comments.objects.filter(user = user, blog_post = request.data['id']).count() > 0 else False
+
             #Check if user posted in this thread already
             if(user_has_posted == False):
                 comment = Blog_Post_Comments.objects.create(blog_post = Blog_Post.objects.get(id = int(request.data['id'])), user = user, comment = request.data['comment'], date_posted = now)
@@ -167,7 +168,7 @@ def Create_Comment(request):
             parent_comment = Blog_Post_Comments.objects.get(id = int(request.data['comment_id']))
             
             #Check to see if a user has already replied to this comment
-            user_has_replied = True if Blog_Post_Comments.objects.filter(parent = parent_comment, user = user).count() > 0 else False
+            user_has_replied = True if Blog_Post_Comments.objects.filter(parent = parent_comment, user = user, comment = request.data['comment_id']).count() > 0 else False
 
             if(user_has_replied == False):
                 reply = Blog_Post_Comments.objects.create(user = user, comment = request.data['comment'], parent = parent_comment, date_posted = now)
