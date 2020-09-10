@@ -7,9 +7,7 @@ from django.dispatch import receiver
 from femenist_blog import settings
 from blog_site.managers import *
 
-
 # Create your models here.
-
 class Blog_Post(models.Model):
     post_title                          = models.CharField(max_length = 250, default = 'Enter a Post Title')
     author                              = models.CharField(max_length = 75, default = 'Enter name of the post author')
@@ -26,8 +24,6 @@ class User(AbstractBaseUser):
     username                        = models.CharField(verbose_name = 'username', max_length=30, blank = False, null = False, primary_key = True, unique = True)
     email                           = models.EmailField(verbose_name = 'email', blank = False, null = False, unique = True)
 
-    first_name                      = models.CharField(max_length = 25, blank = False, null = False)
-    last_name                       = models.CharField(max_length = 25, blank = False, null = False)
     date_of_birth                   = models.DateField(blank = False, null = False, default = timezone.now)
     
     date_joined                     = models.DateTimeField(verbose_name = 'date_joined', auto_now_add = True)
@@ -39,7 +35,7 @@ class User(AbstractBaseUser):
 
     EMAIL_FIELD                     = 'email'
     USERNAME_FIELD                  = 'username'
-    REQUIRED_FIELDS                 = ['email', 'first_name', 'last_name', 'date_of_birth']
+    REQUIRED_FIELDS                 = ['email', 'date_of_birth']
 
     objects                         = UserManager()
     def __str__(self):
@@ -50,6 +46,18 @@ class User(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         return True
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].lower()
+        return email
+
+class EmailCodes(models.Model):
+    code                                = models.CharField(max_length = 6, unique = True, null = False)
+    email                               = models.EmailField(unique = True, null = False)
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].lower()
+        return email
 
 class Blog_Post_Comments(models.Model):
     user                                = models.ForeignKey(User, on_delete = models.CASCADE)

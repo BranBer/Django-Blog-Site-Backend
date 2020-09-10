@@ -8,8 +8,12 @@ from datetime import datetime
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 
+import smtplib, ssl
+from email.mime.text import MIMEText
 import json
 import os
+import random
+import string
 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
@@ -109,7 +113,7 @@ def UpdateBlogPostVisibility(request):
     return JsonResponse('Must include id in body')
 
 @api_view(['POST'])
-def AdminLogin(request):
+def Login(request):
     if('username' in request.data.keys() and 'password' in request.data.keys()):
         user = authenticate(username = request.data['username'], 
                             password = request.data['password'])
@@ -262,3 +266,111 @@ def Vote_On_Comment(request):
         return JsonResponse("Invalid Token", safe = False, status = 500)
     except Blog_Post_Comments.DoesNotExist:
         return JsonResponse("Invalid Comment", safe = False, status = 500)
+
+
+
+@api_view(['POST'])
+def SendRegistrationCode(request):
+    if('email' not in request.data.keys()):
+        return JsonResponse('Must include email', safe = False, status = 500)
+    if('username' not in request.data.keys()):
+        return JsonResponse('Must include username', safe = False, status = 500)
+
+    email = request.data['email'].lower()
+    username = request.data['username']
+    email_exists = User.objects.filter(email = email).exists()
+    user_exists = User.objects.filter(username = username).exists()
+
+    #Check if username or email is already in the system
+    if(email_exists):
+        return JsonResponse('An email is already associated with a user', safe = False, status = 500)
+    if(user_exists):
+        return JsonResponse('A username is already associated with a user', safe = False, status = 500)
+    
+
+    #This is tries to delete any entries if the user needs to resend the code to their email
+    try:
+        EmailCodes.objects.get(email = email).delete()
+    except EmailCodes.DoesNotExist:
+        pass    
+
+    port = 465
+    account = os.environ['SMTP_ACCOUNTS'].split(',')[0].split(':')
+    sender = account[0]
+    password = account[1]
+
+    context = ssl.create_default_context()
+
+    #Creates a random code
+    code = ''.join(random.choice(string.digits + string.ascii_letters + string.digits) for i in range(6))
+
+    #Create the email message
+    content = "Your code is: " + code
+    msg = MIMEText(content)
+    msg['Subject'] = 'Your Registration Code'
+    msg['From'] = sender
+
+    EmailCodes.objects.create(code = code, email = email)
+
+     #Sends the code
+    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+        server.login(sender, password)
+        server.sendmail(sender, email, msg.as_string())
+
+    del password
+
+    return JsonResponse("Code Successfuly Sent!", safe = False)
+
+@api_view(['POST'])
+def AuthorizeRegistrationCode(request):
+    if('email' not in request.data.keys()):
+        return JsonResponse('Must include email', safe = False, status = 500)
+    if('username' not in request.data.keys()):
+        return JsonResponse('Must include username', safe = False, status = 500)
+    if('password' not in request.data.keys()):
+        return JsonResponse('Must include email', safe = False, status = 500)
+    if('dob' not in request.data.keys()):
+        return JsonResponse('Must include date of birth', safe = False, status = 500)
+    if('code' not in request.data.keys()):
+        return JsonResponse('Must include code', safe = False, status = 500)
+
+    
+    # Get the authcode
+    code = EmailCodes.objects.filter(
+        email = request.data['email'].lower(),
+        code = request.data['code']
+    )
+
+    existing_user = User.objects.filter()
+
+    # Trying to enforce one email per account
+    if(code.count() > 1):
+        return JsonResponse('This email is already in use', safe = False, status = 500)
+    elif(code.count() == 1):
+
+        # Confirm the code then create the user, if the code does not exists, return a 
+        # response saying that the code is invalid.
+        try:
+            code = EmailCodes.objects.get(email = request.data['email'].lower(), code = request.data['code'])
+
+            User.objects.create_user(
+                email = request.data['email'],
+                username = request.data['username'],
+                password = request.data['password'],
+                date_of_birth = request.data['dob'],
+            )
+
+            #Delete the code so that no one can use it to create more accounts 
+            code.delete()
+
+            return JsonResponse("Successfully Created New User!", safe = False)
+        except EmailCodes.DoesNotExist:
+            return JsonResponse('Invalid code, try again', safe = False, status = 500)
+
+    return JsonResponse("Code not found...how did you get here?", safe = False, status = 500)
+
+        
+        
+
+
+    
