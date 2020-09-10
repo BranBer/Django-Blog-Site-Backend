@@ -283,9 +283,9 @@ def SendRegistrationCode(request):
 
     #Check if username or email is already in the system
     if(email_exists):
-        return JsonResponse('An email is already associated with a user', safe = False, status = 500)
+        return JsonResponse('A user is associated with that email', safe = False, status = 500)
     if(user_exists):
-        return JsonResponse('A username is already associated with a user', safe = False, status = 500)
+        return JsonResponse('A user is associated with that username', safe = False, status = 500)
     
 
     #This is tries to delete any entries if the user needs to resend the code to their email
