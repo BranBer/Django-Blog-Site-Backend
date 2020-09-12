@@ -370,6 +370,68 @@ def AuthorizeRegistrationCode(request):
     return JsonResponse("Code not found...how did you get here?", safe = False, status = 500)
 
         
+#If the user forgot their password, this sends a code to the user's email that can be used to change their password        
+@api_view(['POST'])
+def SendForgotPasswordCode(request):
+    if('email' not in request.data.keys()):
+        return JsonResponse('Must include email', safe = False, status = 500)
+
+    user = User.objects.filter(email = request.data['email'])
+
+    if(user.exists()):
+        username = user[0].username
+
+        #if a code already exists, delete it so that it can be resent
+        current_code = ChangePasswordCodes.objects.filter(user = user[0])
+        if(current_code.exists()):
+            current_code[0].delete()
+
+        port = 465
+        context = ssl.create_default_context()
+
+        account = os.environ['SMTP_ACCOUNTS'].split(',')[0].split(':')
+        sender = account[0]
+        password = account[1]
+
+        code = ''.join(random.choice(string.digits + string.ascii_letters + string.digits) for i in range(6))
+
+        msg = MIMEText('The code to reset your password for user ' + username + ' is ' + code)
+        msg['Subject'] = 'Password Reset'
+        msg['From'] = sender
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", port, context = context) as server:
+            #Create the code and send the email
+            ChangePasswordCodes.objects.create(user = user[0], code = code)
+            server.login(sender, password)
+            server.sendmail(sender, user[0].email, msg.as_string())
+
+        del password
+
+        return JsonResponse('Code sent', safe = False, status = 200)     
+    else:
+        return JsonResponse('No user found', safe = False, status = 500)
+
+#Changes the password given that the user enters a code that was sent to their email and is currently in the system
+@api_view(['POST'])
+def ChangePassword(request):
+    if('code' not in request.data.keys()):
+        return JsonResponse('Must include code', safe = False, status = 500)
+
+    if('password' not in request.data.keys()):
+        return JsonResponse('Must include password', safe = False, status = 500)
+    try:
+        code = ChangePasswordCodes.objects.get(code = request.data['code'])
+        user = code.user
+        user.set_password(request.data['password'])
+        user.save()
+
+        #Delete the code so that no one can exploit the code to change that user's password
+        code.delete()
+
+        return JsonResponse('Successfully changed user ' + user.username + '\'s password', safe = False, status = 200)
+
+    except ChangePasswordCodes.DoesNotExist:
+        return JsonResponse('Invalid Code', safe = False, status = 500)
         
 
 

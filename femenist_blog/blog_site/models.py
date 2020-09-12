@@ -59,6 +59,10 @@ class EmailCodes(models.Model):
         email = self.cleaned_data['email'].lower()
         return email
 
+class ChangePasswordCodes(models.Model):
+    user                                = models.OneToOneField(User, on_delete = models.CASCADE)
+    code                                = models.CharField(max_length = 6, unique = True, null = False)
+
 class Blog_Post_Comments(models.Model):
     user                                = models.ForeignKey(User, on_delete = models.CASCADE)
     blog_post                           = models.ForeignKey(Blog_Post, on_delete = models.CASCADE, default = None, null = True)
