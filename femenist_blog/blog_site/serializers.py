@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from blog_site.models import *
 
+class User_Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'display_name']
 
 class Blog_Post_Image_Ser(serializers.ModelSerializer):
     class Meta:
@@ -19,12 +23,12 @@ class Blog_Post_Vote_Serializer(serializers.ModelSerializer):
 
 class Blog_Post_Comments_Serializer(serializers.ModelSerializer):
     reply = RecursiveField(many = True)
-    username = serializers.CharField(source = 'user.username')
+    display_name = serializers.CharField(source = 'user.display_name')
     net_votes = serializers.SerializerMethodField()
 
     class Meta:
         model = Blog_Post_Comments
-        fields = ['id', 'blog_post', 'comment', 'username', 'date_posted', 'net_votes', 'reply']
+        fields = ['id', 'blog_post', 'comment', 'display_name', 'date_posted', 'net_votes', 'reply']
 
     def get_net_votes(self, instance):
         upvotes = instance.blog_post_comment_vote_set.filter(vote_type = True).count()

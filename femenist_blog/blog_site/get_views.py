@@ -115,3 +115,20 @@ def Get_Blog_Post_Comments(request, id):
         return JsonResponse(ser.data, safe = False)
     except Blog_Post.DoesNotExist:
         return JsonResponse("Invalid Blog Post ID", safe = False, status = 404)
+
+@api_view(['GET'])
+def Get_User_Data(request):
+    try: 
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        data = {}
+
+        data['username'] = user.username
+        data['display_name'] = user.display_name
+        data['email'] = user.email
+        data['dob'] = user.date_of_birth
+
+        return JsonResponse(data, safe = False, status = 200)
+    except User.DoesNotExist:
+        return JsonResponse("User not found", safe = False, status = 404)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 404)

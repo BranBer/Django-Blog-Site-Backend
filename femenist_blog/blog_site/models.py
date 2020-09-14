@@ -23,6 +23,7 @@ class Blog_Post_Image(models.Model):
 class User(AbstractBaseUser):
     username                        = models.CharField(verbose_name = 'username', max_length=30, blank = False, null = False, primary_key = True, unique = True)
     email                           = models.EmailField(verbose_name = 'email', blank = False, null = False, unique = True)
+    display_name                    = models.CharField(verbose_name = 'display_name', max_length = 50, blank = False, default = 'Not Set', null = False, unique = False)
 
     date_of_birth                   = models.DateField(blank = False, null = False, default = timezone.now)
     

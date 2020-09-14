@@ -333,6 +333,8 @@ def AuthorizeRegistrationCode(request):
         return JsonResponse('Must include date of birth', safe = False, status = 500)
     if('code' not in request.data.keys()):
         return JsonResponse('Must include code', safe = False, status = 500)
+    if('display_name' not in request.data.keys()):
+        return JsonResponse('Must include display name', safe = False, status = 500)
 
     
     # Get the authcode
@@ -358,6 +360,7 @@ def AuthorizeRegistrationCode(request):
                 username = request.data['username'],
                 password = request.data['password'],
                 date_of_birth = request.data['dob'],
+                display_name = request.data['display_name']
             )
 
             #Delete the code so that no one can use it to create more accounts 
@@ -385,7 +388,7 @@ def SendForgotPasswordCode(request):
         current_code = ChangePasswordCodes.objects.filter(user = user[0])
         if(current_code.exists()):
             current_code[0].delete()
-
+            
         port = 465
         context = ssl.create_default_context()
 
@@ -432,7 +435,28 @@ def ChangePassword(request):
 
     except ChangePasswordCodes.DoesNotExist:
         return JsonResponse('Invalid Code', safe = False, status = 500)
-        
 
+
+#Function that allows a logged in user to update every
+@api_view(['POST'])
+def UpdateUser(request):
+    try: 
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        data = request.data
+
+        #This makes it so that the user can only update their email and display_name
+        for key in data.keys():
+            if(key.lower() == 'email'):   
+                user.email = data[key]
+            if(key.lower() == 'display_name'):
+                user.display_name = data[key]   
+
+        user.save()     
+
+        return JsonResponse(User_Serializer(user).data, safe = False, status = 200)
+    except User.DoesNotExist:
+        return JsonResponse("User not found", safe = False, status = 404)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 404)
 
     
