@@ -439,6 +439,7 @@ def ChangePassword(request):
 
 #Function that allows a logged in user to update every
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def UpdateUser(request):
     try: 
         user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
