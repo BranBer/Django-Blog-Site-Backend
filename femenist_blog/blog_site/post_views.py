@@ -447,9 +447,9 @@ def UpdateUser(request):
 
         #This makes it so that the user can only update their email and display_name
         for key in data.keys():
-            if(key.lower() == 'email'):   
+            if(key.lower() == 'email' and data[key] is not ''):   
                 user.email = data[key]
-            if(key.lower() == 'display_name'):
+            if(key.lower() == 'display_name' and data[key] is not ''):
                 user.display_name = data[key]   
 
         user.save()     
