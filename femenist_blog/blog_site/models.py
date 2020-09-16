@@ -62,7 +62,7 @@ class EmailCodes(models.Model):
 
 class ChangeEmailCodes(models.Model):
     code                                = models.CharField(max_length = 6, unique = True, null = False)
-    user                                = models.ForeignKey(User, null = False, on_delete = models.CASCADE)
+    user                                = models.OneToOneField(User, null = False, on_delete = models.CASCADE)
     new_email                           = models.EmailField(unique = True, null = False)
 
     def clean_new_email(self):
