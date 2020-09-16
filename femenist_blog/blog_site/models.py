@@ -60,6 +60,15 @@ class EmailCodes(models.Model):
         email = self.cleaned_data['email'].lower()
         return email
 
+class ChangeEmailCodes(models.Model):
+    code                                = models.CharField(max_length = 6, unique = True, null = False)
+    user                                = models.ForeignKey(User, null = False, on_delete = models.CASCADE)
+    new_email                           = models.EmailField(unique = True, null = False)
+
+    def clean_new_email(self):
+        new_email = self.cleaned_data['new_email'].lower()
+        return new_email
+
 class ChangePasswordCodes(models.Model):
     user                                = models.OneToOneField(User, on_delete = models.CASCADE)
     code                                = models.CharField(max_length = 6, unique = True, null = False)

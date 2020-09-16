@@ -117,6 +117,7 @@ def Get_Blog_Post_Comments(request, id):
         return JsonResponse("Invalid Blog Post ID", safe = False, status = 404)
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def Get_User_Data(request):
     try: 
         user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user

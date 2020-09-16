@@ -437,7 +437,7 @@ def ChangePassword(request):
         return JsonResponse('Invalid Code', safe = False, status = 500)
 
 
-#Function that allows a logged in user to update every
+#Function that allows a logged in user to update their display name and email
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def UpdateUser(request):
@@ -448,7 +448,31 @@ def UpdateUser(request):
         #This makes it so that the user can only update their email and display_name
         for key in data.keys():
             if(key.lower() == 'email' and data[key] is not ''):   
-                user.email = data[key]
+                #Send an email confirmation code here
+
+                #Generate random code of 6 characters
+                chars = string.digits + string.ascii_letters + string.digits
+                code = ''.join(random.choice(chars) for char in range(6))
+                
+                e_code = ChangeEmailCodes.objects.create(email = data[key], code = code, user = user)
+
+                #Send email
+                port = 465
+                
+                account = os.environ['SMTP_ACCOUNTS'].split(',')[0]
+                sender = account.split(':')[0]
+                password = account.split(':')[1]
+                
+                msg = MIMEText('Your code to change your email is: ' + code)
+                msg['Subject'] = "Email Change Auth Code"
+                msg['From'] = sender
+
+                context = ssl_lib.create_default_context()
+
+                with smtplib.SMTP_SSL("smtp.gmail.com", port, context = context) as server:
+                    server.login(sender, password)
+                    server.sendmail(sender, data[key], msg.as_string())
+
             if(key.lower() == 'display_name' and data[key] is not ''):
                 user.display_name = data[key]   
 
@@ -460,4 +484,29 @@ def UpdateUser(request):
     except Token.DoesNotExist:
         return JsonResponse("Invalid Token", safe = False, status = 404)
 
-    
+#Function that allows a logged in user to update their email given that they supply the correct code
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def UpdateUserEmail(request):
+    if('code' not in request.data.keys()):
+        return JsonResponse("Must Include Code", safe = False, status = 500)
+
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        code = request.data['code']
+
+        #The user must be logged in to change the code. That way you need more than just 
+        #the code to change a user's email
+        emailCode = ChangeEmailCodes.objects.get(code = code, user = user)
+        myUser = emailCode.user
+
+        myUser.email = emailCode.email
+        myUser.save()
+
+        return JsonResponse(User_Serializer(myUser).data, safe = False, status = 200)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 500)
+    except User.DoesNotExist:
+        return JsonResponse("User not found", safe = False, status = 500)
+    except ChangeEmailCodes.DoesNotExist:
+        return JsonResponse("Invalid Code", safe = False, status = 500)
