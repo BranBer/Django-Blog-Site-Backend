@@ -133,3 +133,13 @@ def Get_User_Data(request):
         return JsonResponse("User not found", safe = False, status = 404)
     except Token.DoesNotExist:
         return JsonResponse("Invalid Token", safe = False, status = 404)
+
+@api_view(['GET'])
+def Check_If_Super_User(request):
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        return JsonResponse(user.is_superuser, safe = False, status = 200)
+    except User.DoesNotExist:
+        return JsonResponse("User not found", safe = False, status = 404)
+    except Token.DoesNotExist:
+        return JsonResponse("Invalid Token", safe = False, status = 404)

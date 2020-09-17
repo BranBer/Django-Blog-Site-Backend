@@ -35,6 +35,7 @@ urlpatterns = [
     path('User/ForgotPassword/', SendForgotPasswordCode),
     path('User/Update/', UpdateUser),
     path('User/VerifyNewEmail/', UpdateUserEmail),
+    path('User/IsSuperUser/', Check_If_Super_User),
     path('User/ChangePassword/', ChangePassword),
     path('create/', Create_Blog_Post),
     path('create/ByYou/', Create_Blog_Post_By_You),
