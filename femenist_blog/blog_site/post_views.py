@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate
 
 import smtplib, ssl
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import json
 import os
 import random
@@ -522,3 +523,111 @@ def UpdateUserEmail(request):
         return JsonResponse("User not found", safe = False, status = 500)
     except ChangeEmailCodes.DoesNotExist:
         return JsonResponse("Invalid Code", safe = False, status = 500)
+
+#This view allows a user to send an email to a moderator email given that
+#the user supplies the comment id and the reason for reporting said comment
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def ReportComment(request):
+    if('id' not in request.data.keys()):
+        return JsonResponse("Must include comment id", safe = False, status = 500)
+    if('reason' not in request.data.keys()):
+        return JsonResponse("Must include reason", safe = False, status = 500)
+
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        comment = Blog_Post_Comments.objects.get(id = request.data['id'])
+
+        port = 465
+        context = ssl.create_default_context()
+        account = os.environ['SMTP_ACCOUNTS'].split(',')[0].split(':')
+
+        sender = account[0]
+        password = account[1]
+
+        recepient = 'brandonberke@gmail.com'
+
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Comment Report by " + user.username
+        msg['From'] = sender
+        msg['To'] = recepient
+
+        html = """
+            <html>
+
+                <head>
+                    <style>
+                        body{{
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                        }}
+
+                        label{{
+                            font-weight: bold;     
+                            text-decoration: underline;                           
+                        }}
+                    </style>
+                </head>
+
+                <body>
+                    <label>Comment ID</label>
+                    <p> {} </p>
+
+                    <label>Reason</label>
+                    <p>
+                        {}
+                    </p>
+      
+                    <label>Comment Creator</label>
+                    <p> 
+                        {} 
+                    </p>
+
+                    <label>Comment Content</label>
+                    <p>
+                        {}
+                    </p>
+
+                </body>
+
+            </html>
+        """.format(request.data['id'], request.data['reason'], comment.user.username, comment.comment)
+
+        part1 = MIMEText(html, 'html')
+        msg.attach(part1)
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", port, context = context) as server:
+            server.login(sender, password)
+            server.sendmail(sender, recepient, msg.as_string())
+
+        return JsonResponse('Report Submitted', safe = False, status = 200)
+    except Token.DoesNotExist:
+        return JsonResponse('Invalid Token', safe = False, status = 500)
+    except User.DoesNotExist:
+        return JsonResponse('Invalid User', safe = False, status = 500)
+    except Blog_Post_Comments.DoesNotExist:
+        return JsonResponse('Invalid Comment', safe = False, status = 500)
+
+#This view allows super users to delete comments
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def DeleteComment(request):
+    if('id' not in request.data.keys()):
+        return JsonResponse("Must include comment id", safe = False, status = 500)
+
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        if(user.is_superuser):
+            Blog_Post_Comments.objects.get(id = request.data['id']).delete()
+
+            return JsonResponse('Comment Deleted', safe = False, status = 200)
+        
+
+        return JsonResponse('Unauthorized', safe = False, status = 500)
+    except Token.DoesNotExist:
+        return JsonResponse('Invalid Token', safe = False, status = 500)
+    except User.DoesNotExist:
+        return JsonResponse('Invalid User', safe = False, status = 500)
+    except Blog_Post_Comments.DoesNotExist:
+        return JsonResponse('Invalid Comment', safe = False, status = 500)
