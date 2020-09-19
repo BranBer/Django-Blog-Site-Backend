@@ -39,6 +39,8 @@ urlpatterns = [
     path('User/VerifyNewEmail/', UpdateUserEmail),
     path('User/IsSuperUser/', Check_If_Super_User),
     path('User/ChangePassword/', ChangePassword),
+    path('User/Disable/', DisableUser),
+    path('User/Enable/', EnableUser),
     path('create/', Create_Blog_Post),
     path('create/ByYou/', Create_Blog_Post_By_You),
     path('create/comment/', Create_Comment),
