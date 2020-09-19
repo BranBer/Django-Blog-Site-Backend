@@ -650,7 +650,7 @@ def DeleteComment(request):
 @user_passes_test(lambda user: user.is_active and user.is_superuser)
 def DisableUser(request):
     if('username' not in request.data.keys()):
-        return JsonResponse('Must include username', safe = False, status = 500)
+        return JsonResponse('Must include username', safe = False, status = 401)
     try:
         user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
 
@@ -660,11 +660,11 @@ def DisableUser(request):
 
         return JsonResponse('User ' + disabledUser.username + ' has been disabled', safe = False, status = 200)
     except Token.DoesNotExist:
-        return JsonResponse('Invalid Token', safe = False, status = 500)
+        return JsonResponse('Invalid Token', safe = False, status = 401)
     except User.DoesNotExist:
-        return JsonResponse('Invalid User', safe = False, status = 500)
+        return JsonResponse('Invalid User', safe = False, status = 401)
     except Blog_Post_Comments.DoesNotExist:
-        return JsonResponse('Invalid Comment', safe = False, status = 500)
+        return JsonResponse('Invalid Comment', safe = False, status = 401)
 
 #This view allows a superuser to enable a user's account
 @api_view(['POST'])
@@ -672,7 +672,7 @@ def DisableUser(request):
 @user_passes_test(lambda user: user.is_active and user.is_superuser)
 def EnableUser(request):
     if('username' not in request.data.keys()):
-        return JsonResponse('Must include username', safe = False, status = 500)
+        return JsonResponse('Must include username', safe = False, status = 401)
     try:
         user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
 
@@ -682,8 +682,34 @@ def EnableUser(request):
 
         return JsonResponse('User ' + enabledUser.username + ' has been enabled', safe = False, status = 200)
     except Token.DoesNotExist:
-        return JsonResponse('Invalid Token', safe = False, status = 500)
+        return JsonResponse('Invalid Token', safe = False, status = 401)
     except User.DoesNotExist:
-        return JsonResponse('Invalid User', safe = False, status = 500)
+        return JsonResponse('Invalid User', safe = False, status = 401)
     except Blog_Post_Comments.DoesNotExist:
-        return JsonResponse('Invalid Comment', safe = False, status = 500)
+        return JsonResponse('Invalid Comment', safe = False, status = 401)
+
+#This view allows a logged in user to like a blog post
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@user_passes_test(lambda user: user.is_active)
+def LikePost(request):
+    if('id' not in request.data.keys()):
+        return JsonResponse('Must include id', safe = False, status = 401)
+
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        post = Blog_Post.objects.get(id = request.data['id'])
+
+        #Check if user has liked post already
+        #If they already liked the post, then they cannot like it again
+        if(post.userpostlikes_set.filter(user = user).exists()):
+            return JsonResponse(user.username + " has already liked this post", safe = False, status = 401)
+
+        UserPostLikes.objects.create(user = user, post = post)
+        return JsonResponse({'CurrentLikes': post.userpostlikes_set.filter().count()}, safe = False, status = 200)
+    except Token.DoesNotExist:
+        return JsonResponse('Invalid Token', safe = False, status = 401)
+    except User.DoesNotExist:
+        return JsonResponse('Invalid User', safe = False, status = 401)
+    except Blog_Post.DoesNotExist:
+        return JsonResponse('Invalid Post ID', safe = False, status = 401)

@@ -37,8 +37,12 @@ class Blog_Post_Comments_Serializer(serializers.ModelSerializer):
         return (upvotes - downvotes)
     
 
-class Blog_Post_Ser(serializers.ModelSerializer):    
+class Blog_Post_Ser(serializers.ModelSerializer):   
+    likes = serializers.SerializerMethodField() 
     class Meta:
         model = Blog_Post
-        fields = ['id', 'post_title', 'author', 'post_content', 'date', 'blog_post']
+        fields = ['id', 'post_title', 'author', 'post_likes', 'post_content', 'date', 'blog_post', 'views']
 
+    def get_likes(self, instance):
+        post_likes = instance.userpostlikes_set.filter().count()
+        return post_likes

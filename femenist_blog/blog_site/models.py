@@ -15,6 +15,7 @@ class Blog_Post(models.Model):
     date                                = models.DateTimeField(default = timezone.now)
     isMainPost                          = models.BooleanField(default = True)
     isVisible                           = models.BooleanField(default = True)
+    views                               = models.IntegerField(default = 0)
 
 class Blog_Post_Image(models.Model):
     blog_post                           = models.ForeignKey(Blog_Post, on_delete = models.CASCADE, related_name = 'blog_post')
@@ -51,6 +52,10 @@ class User(AbstractBaseUser):
     def clean_email(self):
         email = self.cleaned_data['email'].lower()
         return email
+
+class UserPostLikes(models.Model):
+    user                                = models.ForeignKey(User, on_delete = models.CASCADE)
+    post                                = models.ForeignKey(Blog_Post, on_delete = models.CASCADE)
 
 class EmailCodes(models.Model):
     code                                = models.CharField(max_length = 6, unique = True, null = False)

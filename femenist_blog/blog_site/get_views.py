@@ -32,6 +32,8 @@ def Get_Blog_Posts(request, lowerlimit, postsPerPage):
                 'id': post.id,
                 'post_title': post.post_title,
                 'author': post.author,
+                'likes': post.userpostlikes_set.filter().count(),
+                'views': post.views,
                 'post_content': post.post_content,
                 'date': post.date,
                 'isVisible': post.isVisible,
@@ -65,6 +67,8 @@ def Get_Blog_Posts_By_Viewer(request, lowerlimit, postsPerPage):
                 'id': post.id,
                 'post_title': post.post_title,
                 'author': post.author,
+                'likes': post.userpostlikes_set.filter().count(),
+                'views': post.views,
                 'post_content': post.post_content,
                 'date': post.date,
                 'isVisible': post.isVisible
@@ -91,9 +95,11 @@ def Get_Blog_Post_ID(request, id):
                 'id': post.id,
                 'post_title': post.post_title,
                 'author': post.author,
+                'likes': post.userpostlikes_set.filter().count(),
+                'views': post.views,
                 'post_content': post.post_content,
                 'date': post.date,
-                'images': images
+                'images': images,
             }
         )
 

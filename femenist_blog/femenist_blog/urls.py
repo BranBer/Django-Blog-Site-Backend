@@ -31,6 +31,7 @@ urlpatterns = [
     path('posts/comments/vote/', Vote_On_Comment),
     path('posts/comments/report/', ReportComment),
     path('posts/comments/delete/', Delete_Comment),
+    path('posts/like/', LikePost),
     path('Register/SendCode/', SendRegistrationCode),
     path('Register/Authorize/', AuthorizeRegistrationCode),
     path('User/GetUser/', Get_User_Data),
