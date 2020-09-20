@@ -41,7 +41,7 @@ class Blog_Post_Ser(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField() 
     class Meta:
         model = Blog_Post
-        fields = ['id', 'post_title', 'author', 'post_likes', 'post_content', 'date', 'blog_post', 'views']
+        fields = ['id', 'post_title', 'author', 'post_likes', 'post_content', 'date', 'blog_post']
 
     def get_likes(self, instance):
         post_likes = instance.userpostlikes_set.filter().count()

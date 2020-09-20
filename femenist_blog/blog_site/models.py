@@ -15,7 +15,6 @@ class Blog_Post(models.Model):
     date                                = models.DateTimeField(default = timezone.now)
     isMainPost                          = models.BooleanField(default = True)
     isVisible                           = models.BooleanField(default = True)
-    views                               = models.IntegerField(default = 0)
 
 class Blog_Post_Image(models.Model):
     blog_post                           = models.ForeignKey(Blog_Post, on_delete = models.CASCADE, related_name = 'blog_post')
