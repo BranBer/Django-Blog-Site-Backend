@@ -701,12 +701,41 @@ def LikePost(request):
         post = Blog_Post.objects.get(id = request.data['id'])
 
         #Check if user has liked post already
-        #If they already liked the post, then they cannot like it again
+        #If they already liked the post, then delete to like
+        #This allows the user to unlike the post
         if(post.userpostlikes_set.filter(user = user).exists()):
-            return JsonResponse(user.username + " has already liked this post", safe = False, status = 401)
+            UserPostLikes.objects.get(user = user, post = post).delete()
+            return JsonResponse({'CurrentLikes': post.userpostlikes_set.filter().count(),
+                                 'Liked': False}, safe = False, status = 200)
 
         UserPostLikes.objects.create(user = user, post = post)
-        return JsonResponse({'CurrentLikes': post.userpostlikes_set.filter().count()}, safe = False, status = 200)
+        return JsonResponse({'CurrentLikes': post.userpostlikes_set.filter().count(), 'Liked': True}, safe = False, status = 200)
+    except Token.DoesNotExist:
+        return JsonResponse('Invalid Token', safe = False, status = 401)
+    except User.DoesNotExist:
+        return JsonResponse('Invalid User', safe = False, status = 401)
+    except Blog_Post.DoesNotExist:
+        return JsonResponse('Invalid Post ID', safe = False, status = 401)
+
+
+#This checks if a user has liked a post already
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@user_passes_test(lambda user: user.is_active)
+def HasLiked(request):
+    if('id' not in request.data.keys()):
+        return JsonResponse('Must include id', safe = False, status = 401)
+
+    try:
+        user = Token.objects.get(key = request.headers.get('Authorization')[6:]).user
+        post = Blog_Post.objects.get(id = request.data['id'])
+
+        #Check if user has liked post already
+        #If they already liked the post, then they cannot like it again
+        if(post.userpostlikes_set.filter(user = user).exists()):
+            return JsonResponse({'HasLiked': True}, safe = False, status = 200)
+
+        return JsonResponse({'HasLiked': False}, safe = False, status = 200)
     except Token.DoesNotExist:
         return JsonResponse('Invalid Token', safe = False, status = 401)
     except User.DoesNotExist:
