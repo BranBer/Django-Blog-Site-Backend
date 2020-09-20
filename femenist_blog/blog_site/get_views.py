@@ -13,17 +13,20 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 def Get_Blog_Posts(request, lowerlimit, postsPerPage):
     data = []
     posts = Blog_Post.objects.filter(isMainPost = True).order_by('-date')
+    isLastPage = False
 
     if(lowerlimit < 0): #Display first page of posts
         posts = posts[0:postsPerPage]
     elif(len(posts) - lowerlimit < postsPerPage): #Display last page of posts
         if(len(posts) - postsPerPage >= 0):
             posts = posts[len(posts) - postsPerPage: len(posts)]
+            isLastPage = True
         else:
             posts = posts[0: len(posts)]
     else:
         posts = posts[lowerlimit:lowerlimit+postsPerPage]
         
+    data.append(isLastPage)
 
     for post in posts:
         post_images = Blog_Post_Image.objects.filter(blog_post = post).values('image')
@@ -48,17 +51,20 @@ def Get_Blog_Posts_By_Viewer(request, lowerlimit, postsPerPage):
     data = []
 
     posts = Blog_Post.objects.filter(isMainPost = False, isVisible = True).order_by('-date')                
+    isLastPage = False
 
     if(lowerlimit < 0): #Display first page of posts
         posts = posts[0:postsPerPage]
     elif(len(posts) - lowerlimit < postsPerPage):#Display last page of posts
         if(len(posts) - postsPerPage >= 0):
             posts = posts[len(posts) - postsPerPage: len(posts)]
+            isLastPage = True
         else:
             posts = posts[0: len(posts)]
     else:
         posts = posts[lowerlimit:lowerlimit+postsPerPage]
 
+    data.append(isLastPage)
 
     for post in posts:
         data.append(
@@ -146,3 +152,27 @@ def Check_If_Super_User(request):
         return JsonResponse("User not found", safe = False, status = 404)
     except Token.DoesNotExist:
         return JsonResponse("Invalid Token", safe = False, status = 404)
+
+#This view gets the most recent welcome message
+@api_view(['GET'])
+def Get_Welcome_Message(request):
+    messages = WelcomeMessage.objects.filter().order_by('-date_posted')
+
+    if(messages.exists()):
+        return JsonResponse(
+            {
+                'WelcomeMessage': messages[0].message,
+                'date_posted': messages[0].date_posted
+            },
+            safe = False,
+            status = 200
+        )
+
+    return JsonResponse(
+        {
+            'WelcomeMessage': 'This is a platform that allows you to dive in to the collective experiences of Sarah and other disabled persons.',
+            'date_posted': messages[0].date_posted
+        },
+        safe = False,
+        status = 200
+    )

@@ -742,3 +742,15 @@ def HasLiked(request):
         return JsonResponse('Invalid User', safe = False, status = 401)
     except Blog_Post.DoesNotExist:
         return JsonResponse('Invalid Post ID', safe = False, status = 401)
+
+#This allows a super user to create a new welcome message
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
+def CreateWelcomeMessage(request):
+    if('message' not in request.data.keys()):
+        return JsonResponse('Must include message', safe = False, status = 401)
+
+    WelcomeMessage.objects.create(date_posted = datetime.now(), message = request.data['message'])
+
+    return JsonResponse('Successfully created message', safe = False, status = 200)

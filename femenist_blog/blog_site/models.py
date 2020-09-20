@@ -52,6 +52,10 @@ class User(AbstractBaseUser):
         email = self.cleaned_data['email'].lower()
         return email
 
+class WelcomeMessage(models.Model):
+    date_posted                         = models.DateTimeField(null = True)
+    message                             = models.TextField()
+
 class UserPostLikes(models.Model):
     user                                = models.ForeignKey(User, on_delete = models.CASCADE)
     post                                = models.ForeignKey(Blog_Post, on_delete = models.CASCADE)

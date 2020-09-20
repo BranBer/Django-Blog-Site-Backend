@@ -21,6 +21,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('CreateWelcomeMessage/', CreateWelcomeMessage),
+    path('GetWelcomeMessage/',Get_Welcome_Message),
     path('posts/<int:lowerlimit>/<int:postsPerPage>/', Get_Blog_Posts),
     path('posts/<int:id>/', Get_Blog_Post_ID),
     path('posts/ByYou/<int:lowerlimit>/<int:postsPerPage>/', Get_Blog_Posts_By_Viewer),
