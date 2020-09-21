@@ -25,6 +25,7 @@ from django.contrib.auth.decorators import user_passes_test
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
 def Create_Blog_Post(request):
     #Get the token header
     authToken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
@@ -44,13 +45,91 @@ def Create_Blog_Post(request):
             )
 
         blog_post.save()
-
+       
         #Sift through images in data and create a blog post image for each 
         for key in data.keys():
             if(key[0:5] == 'image'):
                 if(data[key] is not None):
                     img = Blog_Post_Image(blog_post = blog_post, image = data[key])
                     img.save()
+
+         #Send newsletter to all subscribed users
+        port = 465
+        context = ssl.create_default_context()
+        account = os.environ['SMTP_ACCOUNTS'].split(',')[0].split(':')
+
+        sender = account[0]
+        password = account[1]
+
+        #Get subscribed users
+        subbedUsers = User.objects.filter(subscribed = True)
+
+        if(subbedUsers.exists()):
+            for user in subbedUsers:
+                recepient = user.email
+
+                date = blog_post.date
+
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = "Newsletter Subscription: New Post! " + user.username
+                msg['From'] = sender
+                msg['To'] = recepient
+                url = '/post/' + str(blog_post.id) +"/"
+
+                html = """
+                    <html>
+                        <head>
+                            <style>
+                                body{{
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    background-image: linear-gradient(to bottom, #FF6565, rgba(0,0,0,0.0));
+                                    color: black;
+                                }}
+
+                                .header
+                                {{
+                                    background-color = #FF6565;
+                                    color: white;
+                                    font-size: 24px;
+                                    font-weight: bold;
+                                    text-align: center;
+                                }}
+
+                                label{{
+                                    font-weight: bold;     
+                                    text-decoration: underline;                           
+                                }}
+                            </style>
+                        </head>
+
+                        <body>
+                            <div className = 'header'>
+                                <h2>New Post!</h2>
+                            </div>
+                            <p>Dear {},</p>
+                            <br/>
+                            <br/>
+                            <p>Check out my new post! You can find this post at <a href = "{}">{}</a>. Be sure to give it a like! </p>
+                            <br/>
+                            <br/>
+                            <p>Sincerely,</p>
+                            <br/>
+                            <p>Sarah</p>
+                            <br/>
+                            <sub>{}</sub>
+                        </body>
+
+                    </html>
+                """.format(user.display_name, url, url, date)
+
+                part1 = MIMEText(html, 'html')
+                msg.attach(part1)
+
+                with smtplib.SMTP_SSL("smtp.gmail.com", port, context = context) as server:
+                    server.login(sender, password)
+                    server.sendmail(sender, recepient, msg.as_string())
 
         return JsonResponse(Blog_Post_Ser(blog_post, many = False).data, safe = False)
     else:
@@ -492,6 +571,8 @@ def UpdateUser(request):
 
             if(key.lower() == 'display_name' and data[key] is not ''):
                 user.display_name = data[key]   
+            if(key.lower() == 'subscribed'):
+                user.subscribed = True if data[key].lower() == 'true' else False
 
         user.save()     
 
@@ -556,7 +637,7 @@ def ReportComment(request):
         sender = account[0]
         password = account[1]
 
-        recepient = 'brandonberke@gmail.com'
+        recepient = 'disabledfeminist@gmail.com'
 
         msg = MIMEMultipart('alternative')
         msg['Subject'] = "Comment Report by " + user.username

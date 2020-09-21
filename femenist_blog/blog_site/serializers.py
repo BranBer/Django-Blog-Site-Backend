@@ -4,7 +4,7 @@ from blog_site.models import *
 class User_Serializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'display_name']
+        fields = ['username', 'email', 'display_name', 'subscribed']
 
 class Blog_Post_Image_Ser(serializers.ModelSerializer):
     class Meta:
@@ -41,7 +41,7 @@ class Blog_Post_Ser(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField() 
     class Meta:
         model = Blog_Post
-        fields = ['id', 'post_title', 'author', 'post_likes', 'post_content', 'date', 'blog_post']
+        fields = ['id', 'post_title', 'author', 'likes', 'post_content', 'date', 'blog_post']
 
     def get_likes(self, instance):
         post_likes = instance.userpostlikes_set.filter().count()

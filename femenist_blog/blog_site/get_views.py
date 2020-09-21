@@ -136,6 +136,7 @@ def Get_User_Data(request):
         data['display_name'] = user.display_name
         data['email'] = user.email
         data['dob'] = user.date_of_birth
+        data['subscribed'] = user.subscribed
 
         return JsonResponse(data, safe = False, status = 200)
     except User.DoesNotExist:

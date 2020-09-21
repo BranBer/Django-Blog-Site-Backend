@@ -26,6 +26,7 @@ class User(AbstractBaseUser):
     display_name                    = models.CharField(verbose_name = 'display_name', max_length = 50, blank = False, default = 'Not Set', null = False, unique = False)
 
     date_of_birth                   = models.DateField(blank = False, null = False, default = timezone.now)
+    subscribed                      = models.BooleanField(default = False)
     
     date_joined                     = models.DateTimeField(verbose_name = 'date_joined', auto_now_add = True)
     last_login                      = models.DateTimeField(verbose_name = 'last_login', auto_now = True) 
