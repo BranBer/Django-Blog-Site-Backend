@@ -22,14 +22,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes, throttle_classes
 from django.contrib.auth.decorators import user_passes_test
 
-
+#This function allows super users to create main blog posts
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @user_passes_test(lambda user: user.is_active and user.is_superuser)
 def Create_Blog_Post(request):
+    if('post_content' not in data.keys()):
+        return JsonResponse("Must include post_content in body", safe = False, status = 401)
+    elif(data['post_content'] == ''):
+        return JsonResponse("Must include post_content in body", safe = False, status = 401)
+
+    if('post_title' not in data.keys()):
+        return JsonResponse("Must include post_title in body", safe = False, status = 401)
+    elif(data['post_title'] == ''):
+        return JsonResponse("Must include post_title in body", safe = False, status = 401)
+        
     #Get the token header
     authToken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
-    user = Token.objects.filter(key = authToken)
+    user = Token.objects.get(key = authToken).user
     
     if(user.count() > 0):
         data = request.data
@@ -39,7 +49,7 @@ def Create_Blog_Post(request):
 
         blog_post = Blog_Post(
             post_title = data['post_title'], 
-            author = data['author'],
+            author = user.display_name,
             post_content = data['post_content'],
             date = date
             )
@@ -135,7 +145,10 @@ def Create_Blog_Post(request):
     else:
         return JsonResponse("Login first", safe = False)
 
+#Allows regular users to make blog posts. User must not be banned. If they don't supply an author, this post is anonymous
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@user_passes_test(lambda user: user.is_active)
 def Create_Blog_Post_By_You(request):
     data = request.data
     data._mutable = True
@@ -150,14 +163,21 @@ def Create_Blog_Post_By_You(request):
     elif(data['post_title'] == ''):
         return JsonResponse("Must include post_title in body", safe = False, status = 401)
         
-    if('author' not in data.keys()):
-        data['author'] = 'anonymous'
+    if('is_anonymous' not in data.keys()):
+        return JsonResponse("Must include is_anonymous in body", safe = False, status = 401)
+    
+    #Get the token header
+    authToken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
+    user = Token.objects.get(key = authToken).user
+    is_anonymous = request.data['is_anonymous']
+
+    author = user.display_name if is_anonymous == 'false' else 'anonymous'
 
     date = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
 
     blog_post = Blog_Post(
         post_title = data['post_title'], 
-        author = data['author'],
+        author = author,
         post_content = data['post_content'],
         date = date,
         isMainPost = False,
@@ -171,23 +191,19 @@ def Create_Blog_Post_By_You(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@user_passes_test(lambda user: user.is_active)
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
 def UpdateBlogPostVisibility(request):
     data = request.data
 
     if('id' in data.keys()):
         try:
             authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
-            isSuperUser = Token.objects.get(key = authtoken).user.isSuperUser
 
-            if(isSuperUser):
-                blog_post = Blog_Post.objects.get(id = int(request.data['id']))
-                blog_post.isVisible = not blog_post.isVisible
-                blog_post.save(update_fields=['isVisible'])
-            else:
-                return JsonResponse('Not Authorized', safe = False, status = 401)
+            blog_post = Blog_Post.objects.get(id = int(request.data['id']))
+            blog_post.isVisible = not blog_post.isVisible
+            blog_post.save()
 
-            return JsonResponse('Successfully Updated Post Visibility', safe = False)
+            return JsonResponse('Successfully Updated Post Visibility', safe = False)            
         except Blog_Post.DoesNotExist:
             return JsonResponse('No Posts Found', safe = False)
         except Token.DoesNotExist:
@@ -215,23 +231,17 @@ def Login(request):
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@user_passes_test(lambda user: user.is_active)
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
 def DeletePost(request):
     try:
         if('id' not in request.data.keys()):
             return JsonResponse("Invalid Credentials", safe = False)
+ 
+        Blog_Post.objects.get(id = request.data['id']).delete()
 
-        authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
-        
-        isSuperUser = Token.objects.get(key = authtoken).user.isSuperUser
-        
-        if(isSuperUser):
-            Blog_Post.objects.get(id = request.data['id']).delete()
-            return JsonResponse("Successfully Deleted Post", safe = False)
-        else:
-            return JsonResponse("Not Authorized", safe = False, status = 401)
+        return JsonResponse("Successfully Deleted Post", safe = False)
     except Blog_Post.DoesNotExist:
-        return JsonResponse("Invalid ID", safe = False)
+        return JsonResponse("Invalid ID", safe = False, status = 401)
 
 
 @api_view(['POST'])
@@ -277,7 +287,7 @@ def Create_Comment(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@user_passes_test(lambda user: user.is_active)
+@user_passes_test(lambda user: user.is_active and user.is_superuser)
 def Delete_Comment(request):
     authtoken = request.headers.get('Authorization')[6:] if request.headers.get('Authorization') else ''
 

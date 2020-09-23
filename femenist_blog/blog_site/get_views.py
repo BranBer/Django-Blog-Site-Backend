@@ -12,7 +12,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 @api_view(['GET'])
 def Get_Blog_Posts(request, lowerlimit, postsPerPage):
     data = []
-    posts = Blog_Post.objects.filter(isMainPost = True).order_by('-date')
+    posts = Blog_Post.objects.filter(isMainPost = True, isVisible = True).order_by('-date')
     isLastPage = False
 
     if(lowerlimit < 0): #Display first page of posts
@@ -51,6 +51,41 @@ def Get_Blog_Posts_By_Viewer(request, lowerlimit, postsPerPage):
     data = []
 
     posts = Blog_Post.objects.filter(isMainPost = False, isVisible = True).order_by('-date')                
+    isLastPage = False
+
+    if(lowerlimit < 0): #Display first page of posts
+        posts = posts[0:postsPerPage]
+    elif(len(posts) - lowerlimit < postsPerPage):#Display last page of posts
+        if(len(posts) - postsPerPage >= 0):
+            posts = posts[len(posts) - postsPerPage: len(posts)]
+            isLastPage = True
+        else:
+            posts = posts[0: len(posts)]
+    else:
+        posts = posts[lowerlimit:lowerlimit+postsPerPage]
+
+    data.append(isLastPage)
+
+    for post in posts:
+        data.append(
+            {
+                'id': post.id,
+                'post_title': post.post_title,
+                'author': post.author,
+                'likes': post.userpostlikes_set.filter().count(),
+                'post_content': post.post_content,
+                'date': post.date,
+                'isVisible': post.isVisible
+            }
+        )
+
+    return JsonResponse(data, safe = False)
+
+@api_view(['GET'])
+def Get_Blog_Posts_By_Viewer_All(request, lowerlimit, postsPerPage):
+    data = []
+
+    posts = Blog_Post.objects.filter(isMainPost = False).order_by('-date')                
     isLastPage = False
 
     if(lowerlimit < 0): #Display first page of posts
